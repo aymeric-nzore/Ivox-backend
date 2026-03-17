@@ -30,7 +30,7 @@ const messageSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enums: ["sent", "delivered", "read"],
+    enum: ["sent", "delivered", "read"],
     default: "sent",
   },
   createdAt: {
