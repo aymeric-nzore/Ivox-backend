@@ -1,14 +1,14 @@
 import mongoose from "mongoose";
 
-const songSchema = new mongoose.Schema(
+const animationschema = new mongoose.Schema(
   {
     title: {
       type: String,
       required: true,
     },
-    description: {
+    itemType: {
       type: String,
-      required: true,
+      default: "animation",
     },
     assetUrl: {
       type: String,
@@ -30,17 +30,15 @@ const songSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    itemType: {
-      type: String,
-      default: "song",
-    },
     categorie: {
       type: String,
-      enum: ["song_traditionnel", "song_moderne"],
+      enum: ["ani_splash", "ani_quizz", "ani_achat"],
       required: true,
     },
+    format: {
+      type: String,
+    }, // gif / lottie
   },
   { timestamps: true },
 );
-
-export default mongoose.model("Song", songSchema);
+export default mongoose.model("Animation", animationschema);

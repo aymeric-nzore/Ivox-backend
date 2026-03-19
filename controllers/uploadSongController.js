@@ -15,7 +15,7 @@ export const uploadSong = async (req, res) => {
       title: title,
       description: description,
       duration: duration,
-      audioUrl: result.secure_url,
+      assetUrl: result.secure_url,
       publicId: result.public_id,
       price: price,
     });

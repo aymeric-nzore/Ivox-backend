@@ -1,14 +1,14 @@
 import mongoose from "mongoose";
 
-const songSchema = new mongoose.Schema(
+const avatarSchema = new mongoose.Schema(
   {
     title: {
       type: String,
       required: true,
     },
-    description: {
+    itemType: {
       type: String,
-      required: true,
+      default: "avatar",
     },
     assetUrl: {
       type: String,
@@ -16,10 +16,6 @@ const songSchema = new mongoose.Schema(
     },
     publicId: {
       type: String,
-      required: true,
-    },
-    duration: {
-      type: Number,
       required: true,
     },
     buyCount: {
@@ -30,17 +26,17 @@ const songSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    itemType: {
-      type: String,
-      default: "song",
-    },
     categorie: {
       type: String,
-      enum: ["song_traditionnel", "song_moderne"],
+      enum: ["avat_hair", "avat_outfit", "avat_eye"],
+      required: true,
+    },
+    gender: {
+      type: String,
+      enum: ["homme", "femmes", "unisex"],
       required: true,
     },
   },
   { timestamps: true },
 );
-
-export default mongoose.model("Song", songSchema);
+export default mongoose.model("Avatar", avatarSchema);

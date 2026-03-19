@@ -59,6 +59,24 @@ const userSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
     },
+    ownedItems: [
+      {
+        itemId: mongoose.Schema.Types.ObjectId,
+        type: {
+          type: String,
+          enum: ["song", "avatar", "animation"],
+        },
+      },
+    ],
+    avatar: {
+      hair: String,
+      eyes: String,
+      outfit: String,
+    },
+    coins: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true },
 );
