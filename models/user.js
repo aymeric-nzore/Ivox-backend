@@ -25,10 +25,6 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
-    photoUri: {
-      type: String,
-      default: null,
-    },
     level: {
       type: Number,
       default: 0,
@@ -58,6 +54,11 @@ const userSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
   },
   { timestamps: true },
 );

@@ -1,5 +1,4 @@
 import User from "../models/user.js";
-import jwt from "jsonwebtoken";
 
 export const register = async (username, email, password) => {
   if (!username || !email || !password) {
@@ -43,9 +42,6 @@ export const login = async (usernameOrEmail, password) => {
       return { error: "Mot de passe invalide" };
     }
     return {
-      token: jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-        expiresIn: "10d",
-      }),
       userId: user._id,
     };
   } catch (e) {
