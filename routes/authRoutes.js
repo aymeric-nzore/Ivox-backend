@@ -13,7 +13,9 @@ const router = express.Router();
 //POST
 router.post("/register", registerUser);
 router.post("/login", loginUser);
-router.post("/deleteAccount", authMiddleware, deleteAccount);
+
+//DELETE
+router.delete("/deleteAccount", authMiddleware, deleteAccount);
 
 //GET
 router.get(
