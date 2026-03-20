@@ -1,40 +1,76 @@
 import User from "../models/user.js";
-import { register, login } from "../services/authService.js";
 import { generateToken } from "../utils/generateToken.js";
 
 export const registerUser = async (req, res) => {
   const { username, email, password } = req.body;
+  const normalizedUsername = username?.trim()?.toLowerCase();
+  const normalizedEmail = email?.trim()?.toLowerCase();
+  const normalizedPassword = password?.trim();
+
+  if (!normalizedUsername || !normalizedEmail || !normalizedPassword) {
+    return res.status(400).json({ message: "Tous les champs sont requis" });
+  }
+  if (normalizedPassword.length < 6) {
+    return res.status(400).json({ message: "Mot de passe trop faible" });
+  }
+
   try {
-    const user = await register(username, email, password);
-    if (user?.error) {
-      return res.status(400).json({ message: user.error });
-    }
+    const user = await User.create({
+      username: normalizedUsername,
+      email: normalizedEmail,
+      password: normalizedPassword,
+    });
+
     return res.status(201).json({
-      token: generateToken({ _id: user.userId }),
-      userId: user.userId,
+      token: generateToken({ _id: user._id }),
+      userId: user._id,
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: "Nom d'utilisateur ou email deja utilise" });
+    }
+    if (error.name === "ValidationError") {
+      const firstError = Object.values(error.errors || {})[0]?.message;
+      return res.status(400).json({ message: firstError || "Donnees invalides" });
+    }
+    if (error.message?.toLowerCase().includes("buffering timed out")) {
+      return res.status(500).json({ message: "Base de donnees indisponible" });
+    }
     return res.status(500).json({ message: "Erreur lors de l'inscription" });
   }
 };
+
 export const loginUser = async (req, res) => {
   const { usernameOrEmail, password } = req.body;
+
+  if (!usernameOrEmail || !password) {
+    return res.status(400).json({ message: "Identifiants et mot de passe requis" });
+  }
+
   try {
-    const response = await login(usernameOrEmail, password);
-    if (response?.error) {
-      if (response.error === "Identifiants et mot de passe requis") {
-        return res.status(400).json({ message: response.error });
-      }
-      if (response.error === "Erreur serveur") {
-        return res.status(500).json({ message: response.error });
-      }
-      return res.status(401).json({ message: response.error });
+    const identifier = usernameOrEmail.trim();
+    const user = await User.findOne({
+      $or: [
+        { email: identifier.toLowerCase() },
+        { username: identifier.toLowerCase() },
+      ],
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: "Identifiants invalides" });
     }
+
+    const isPasswordMatch = await user.correctPassword(password, user.password);
+    if (!isPasswordMatch) {
+      return res.status(401).json({ message: "Mot de passe invalide" });
+    }
+
     return res.status(200).json({
-      token: generateToken({ _id: response.userId }),
-      userId: response.userId,
+      token: generateToken({ _id: user._id }),
+      userId: user._id,
     });
   } catch (error) {
+    console.log(error.message);
     return res.status(500).json({ message: "Erreur lors de la connexion" });
   }
 };
