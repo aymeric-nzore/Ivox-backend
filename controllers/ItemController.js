@@ -3,6 +3,7 @@ import User from "../models/user.js";
 import Song from "../models/song.js";
 import Animation from "../models/animation.js";
 import Avatar from "../models/avatarItem.js";
+import { emitGlobalEvent, emitUserEvent } from "../utils/socketEmitter.js";
 
 //Ajouter un item
 export const uploadShopItem = async (req, res) => {
@@ -74,9 +75,8 @@ export const uploadShopItem = async (req, res) => {
       });
     }
 
-    const io = req.app.get("io");
-    io.emit("new_item", {
-      message: "Nouvel item ajoute",
+    emitGlobalEvent(req, "item_created", {
+      message: "Nouvel item ajouté à la boutique",
       item,
     });
 
@@ -141,7 +141,10 @@ export const getOneItem = async (req, res) => {
 export const deleteShopItem = async (req, res) => {
   try {
     const type =
-      req.query.itemType || req.body?.itemType || req.query.type || req.body?.type;
+      req.query.itemType ||
+      req.body?.itemType ||
+      req.query.type ||
+      req.body?.type;
 
     if (!type || !["song", "animation", "avatar"].includes(type)) {
       return res.status(400).json({ message: "Type d'item invalide" });
@@ -173,15 +176,15 @@ export const deleteShopItem = async (req, res) => {
     await item.deleteOne();
     res.json({ message: "Item supprimé avec succès" });
     //Notifications
-    const io = req.app.get("io");
-    io.emit("delete_item", {
-      message: "Item supprimé",
+    emitGlobalEvent(req, "item_deleted", {
+      message: "Item supprimé de la boutique",
       item,
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 };
+//Acheter un item
 export const buyShopItem = async (req, res) => {
   try {
     const { type } = req.body;
@@ -230,6 +233,13 @@ export const buyShopItem = async (req, res) => {
     item.buyCount += 1;
     await user.save();
     await item.save();
+
+    emitUserEvent(req, userId, "item_bought", {
+      message: "Item achete",
+      item,
+      type,
+    });
+
     return res.status(200).json({ message: "Achat réussi", user, item });
   } catch (error) {
     return res.status(500).json({ message: error.message });

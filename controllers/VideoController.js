@@ -1,5 +1,6 @@
 import cloudinary from "../config/cloudinary.js";
 import Video from "../models/video.js";
+import { emitGlobalEvent, emitUserEvent } from "../utils/socketEmitter.js";
 //Upload
 export const uploadVideo = async (req, res) => {
   const { title, description, duration, coverImage } = req.body;
@@ -19,6 +20,10 @@ export const uploadVideo = async (req, res) => {
       coverImage: coverImage,
       videoUrl: result.secure_url,
       publicId: result.public_id,
+    });
+    emitGlobalEvent(req, "video_uploaded", {
+      video,
+      message: "Nouvelle vidéo ajouté",
     });
     return res.status(201).json(video);
   } catch (error) {
@@ -46,12 +51,17 @@ export const getOneVideo = async (req, res) => {
 //liké une vidéo
 export const likeVideo = async (req, res) => {
   try {
+    const userId = req.user.id;
     const video = await Video.findById(req.params.id);
     if (!video) {
       return res.status(404).json({ message: "Video non trouvee" });
     }
     video.likes += 1;
     await video.save();
+    emitUserEvent(req, userId, "video_liked", {
+      message: "Vidéo liké",
+      video,
+    });
     return res.json(video);
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -84,6 +94,10 @@ export const deleteVideo = async (req, res) => {
     });
     //Suppr dans mongoDb
     await video.deleteOne();
+    emitGlobalEvent(req, "video_deleted", {
+      message: "Vidéo supprimé",
+      video,
+    });
     res.json({ message: "Vidéo supprimé avec succès" });
   } catch (error) {
     return res.status(500).json({ message: error.message });

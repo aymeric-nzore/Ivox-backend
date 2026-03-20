@@ -64,7 +64,7 @@ describe("uploadShopItem success cases", () => {
     expect(Avatar.create).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(201);
     expect(io.emit).toHaveBeenCalledWith(
-      "new_item",
+      "item_created",
       expect.objectContaining({ item: expect.any(Object) }),
     );
   });

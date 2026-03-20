@@ -29,7 +29,7 @@ const itemFilter = (req, file, cb) => {
   }
 
   if (!allowedTypes.includes(file.mimetype)) {
-    return cb(new Error(`Format de fichier non supporte pour ${type}`));
+    return cb(new Error(`Format de fichier non supporté pour ${type}`));
   }
 
   return cb(null, true);

@@ -1,4 +1,4 @@
-import express, { Router } from "express";
+import express from "express";
 import { uploadVideoMiddleware } from "../middlewares/uploadVideoMiddleware.js";
 import {
   uploadVideo,
@@ -7,7 +7,7 @@ import {
   likeVideo,
   playVideo,
   deleteVideo,
-} from "../controllers/uploadVideoController.js";
+} from "../controllers/VideoController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 import { creatorMiddleware } from "../middlewares/creatorMiddleware.js";
 const router = express.Router();
