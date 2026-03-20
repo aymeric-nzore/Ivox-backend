@@ -7,6 +7,10 @@ export const registerUser = async (req, res) => {
   const normalizedEmail = email?.trim()?.toLowerCase();
   const normalizedPassword = password?.trim();
 
+  if (!process.env.JWT_SECRET) {
+    return res.status(500).json({ message: "Configuration serveur manquante: JWT_SECRET" });
+  }
+
   if (!normalizedUsername || !normalizedEmail || !normalizedPassword) {
     return res.status(400).json({ message: "Tous les champs sont requis" });
   }
@@ -26,6 +30,7 @@ export const registerUser = async (req, res) => {
       userId: user._id,
     });
   } catch (error) {
+    console.log("registerUser error:", error.message);
     if (error.code === 11000) {
       return res.status(400).json({ message: "Nom d'utilisateur ou email deja utilise" });
     }
@@ -36,7 +41,7 @@ export const registerUser = async (req, res) => {
     if (error.message?.toLowerCase().includes("buffering timed out")) {
       return res.status(500).json({ message: "Base de donnees indisponible" });
     }
-    return res.status(500).json({ message: "Erreur lors de l'inscription" });
+    return res.status(500).json({ message: "Erreur lors de l'inscription", detail: error.message });
   }
 };
 
