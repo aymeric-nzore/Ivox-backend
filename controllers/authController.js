@@ -99,3 +99,26 @@ export const deleteAccount = async (req, res) => {
     return res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
+export const getAllUsers = async (_req, res) => {
+  try {
+    const users = await User.find().select("-password").sort({ createdAt: -1 });
+    return res.status(200).json(users);
+  } catch (error) {
+    console.log("getAllUsers error:", error.message);
+    return res.status(500).json({ message: "Erreur lors de la recuperation des utilisateurs" });
+  }
+};
+
+export const getOneUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouve" });
+    }
+    return res.status(200).json(user);
+  } catch (error) {
+    console.log("getOneUser error:", error.message);
+    return res.status(500).json({ message: "Erreur lors de la recuperation de l'utilisateur" });
+  }
+};
