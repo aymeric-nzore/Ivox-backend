@@ -1,5 +1,6 @@
 import multer from "multer";
 import fs from "fs";
+import path from "path";
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -12,9 +13,24 @@ const storage = multer.diskStorage({
 });
 
 const ALLOWED_TYPES_BY_ITEM = {
-  song: ["audio/mpeg", "audio/ogg", "audio/wav", "audio/aac"],
+  song: [
+    "audio/mpeg",
+    "audio/mp3",
+    "audio/ogg",
+    "audio/wav",
+    "audio/x-wav",
+    "audio/vnd.wave",
+    "audio/wave",
+    "audio/aac",
+  ],
   animation: ["application/json", "image/gif", "video/mp4", "video/webm"],
   avatar: ["image/jpeg", "image/png", "image/webp"],
+};
+
+const ALLOWED_EXT_BY_ITEM = {
+  song: [".mp3", ".ogg", ".wav", ".aac"],
+  animation: [".json", ".gif", ".mp4", ".webm"],
+  avatar: [".jpg", ".jpeg", ".png", ".webp"],
 };
 
 const normalizeType = (value) =>
@@ -35,7 +51,12 @@ const itemFilter = (req, file, cb) => {
     return cb(new Error("Type d'item invalide"));
   }
 
-  if (!allowedTypes.includes(file.mimetype)) {
+  const ext = path.extname(file.originalname || "").toLowerCase();
+  const allowedExtensions = ALLOWED_EXT_BY_ITEM[type] || [];
+  const mimetypeOk = allowedTypes.includes(file.mimetype);
+  const extensionOk = allowedExtensions.includes(ext);
+
+  if (!mimetypeOk && !extensionOk) {
     return cb(new Error(`Format de fichier non supporté pour ${type}`));
   }
 
