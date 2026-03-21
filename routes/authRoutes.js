@@ -20,8 +20,8 @@ router.post("/login", loginUser);
 router.delete("/deleteAccount", authMiddleware, deleteAccount);
 
 //GET
-router.get("/users", authMiddleware, getAllUsers);
-router.get("/users/:id", authMiddleware, getOneUser);
+router.get("/users", getAllUsers);
+router.get("/users/:id", getOneUser);
 router.get(
   "/google",
   passport.authenticate("google", {
