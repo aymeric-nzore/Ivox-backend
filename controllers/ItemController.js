@@ -226,6 +226,7 @@ export const buyShopItem = async (req, res) => {
     user.coins -= item.price;
     //Ajout à l'inventaire ( owned Items)
     user.ownedItems.push({
+      itemName: item.title,
       itemId: item._id,
       type,
     });

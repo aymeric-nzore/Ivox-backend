@@ -62,6 +62,7 @@ const userSchema = new mongoose.Schema(
     ownedItems: [
       {
         itemId: mongoose.Schema.Types.ObjectId,
+        itemName : String,
         type: {
           type: String,
           enum: ["song", "avatar", "animation"],
