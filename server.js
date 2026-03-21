@@ -7,6 +7,7 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import uploadVideoRoutes from "./routes/videoRoutes.js";
 import itemRoutes from "./routes/itemRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
 import registerSocketHandlers from "./sockets/registerSocketHandlers.js";
 connectDB();
 const app = express();
@@ -17,7 +18,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/video", uploadVideoRoutes);
 app.use("/api/shopItem", itemRoutes);
-
+app.use("/api/users", userRoutes);
 //IO
 const server = createServer(app);
 const io = new Server(server, {

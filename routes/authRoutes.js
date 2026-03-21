@@ -4,8 +4,6 @@ import {
   loginUser,
   deleteAccount,
   googleAuthCallback,
-  getAllUsers,
-  getOneUser,
 } from "../controllers/authController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 import passport from "../config/passport.js";
@@ -20,8 +18,6 @@ router.post("/login", loginUser);
 router.delete("/deleteAccount", authMiddleware, deleteAccount);
 
 //GET
-router.get("/users", getAllUsers);
-router.get("/users/:id", getOneUser);
 router.get(
   "/google",
   passport.authenticate("google", {

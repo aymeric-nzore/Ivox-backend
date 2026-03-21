@@ -11,6 +11,8 @@ Backend API pour l'application IVOX - Plateforme de partage et vente de contenu 
 - [Configuration](#configuration)
 - [Démarrage](#démarrage)
 - [API Endpoints](#api-endpoints)
+- [Routes Admin](#routes-admin)
+- [Tester ADMIN_API_KEY Sur Postman](#tester-admin_api_key-sur-postman)
 - [Socket.IO Events](#socketio-events)
 - [Tests](#tests)
 - [Déploiement](#déploiement)
@@ -86,6 +88,9 @@ MONGO_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<database>?r
 
 # Authentification JWT
 JWT_SECRET=votre-cle-secrete-tres-longue-et-complexe
+
+# Clé admin serveur (routes sensibles)
+ADMIN_API_KEY=votre-cle-admin-longue-et-secrete
 
 # Cloudinary
 CLOUDINARY_NAME=votre-cloudinary-name
@@ -182,7 +187,7 @@ Content-Type: application/json
 ```http
 POST /api/shopItem/upload?itemType=song
 Content-Type: multipart/form-data
-Authorization: Bearer <token>
+x-admin-key: <ADMIN_API_KEY>
 
 file: <fichier>
 title: "Ma Chanson"
@@ -239,6 +244,70 @@ Authorization: Bearer <token>
   "message": "Achat effectué avec succès"
 }
 ```
+
+## 🔐 Routes Admin
+
+Ces routes sont protégées par une clé admin serveur, transmise dans le header `x-admin-key`.
+
+### Header requis
+
+```http
+x-admin-key: <ADMIN_API_KEY>
+```
+
+### Routes admin disponibles
+
+- `GET /api/users/`
+- `GET /api/users/:id`
+- `PATCH /api/users/:id/coins`
+- `PATCH /api/users/:id/updateRole`
+- `POST /api/shopItem/upload?itemType=song|animation|avatar`
+- `DELETE /api/shopItem/:id`
+
+### Routes non-admin (utilisateur connecté JWT)
+
+- `POST /api/shopItem/:id/buy`
+
+## 🧪 Tester ADMIN_API_KEY sur Postman
+
+### 1. Ajouter la variable sur Render
+
+Dans Render > service backend > Environment:
+
+- `ADMIN_API_KEY` = une valeur longue et secrète
+
+Puis redeploy.
+
+### 2. Configurer Postman
+
+Dans votre requête admin:
+
+- Onglet `Headers`
+- Ajouter `x-admin-key` avec la valeur exacte de `ADMIN_API_KEY`
+
+Exemple pour modifier les pièces:
+
+```http
+PATCH /api/users/:id/coins
+Content-Type: application/json
+x-admin-key: <ADMIN_API_KEY>
+
+{
+  "coins": 120
+}
+```
+
+### 3. Résultats attendus
+
+- `200` : accès admin OK
+- `403` : clé absente ou invalide
+- `500` : variable `ADMIN_API_KEY` non configurée côté serveur
+
+### 4. Test rapide conseillé
+
+1. Faire un `GET /api/users/` sans `x-admin-key` (doit renvoyer `403`).
+2. Refaire la même requête avec `x-admin-key` valide (doit renvoyer `200`).
+3. Tester `PATCH /api/users/:id/coins` avec une valeur négative (doit renvoyer `400`).
 
 ## 🔌 Socket.IO Events
 
@@ -447,6 +516,7 @@ backend/
 │   └── VideoController.js
 ├── middlewares/         # Middlewares Express
 │   ├── authMiddleware.js
+│   ├── adminMiddleware.js
 │   ├── creatorMiddleware.js
 │   ├── itemMiddleware.js
 │   └── uploadVideoMiddleware.js
@@ -461,6 +531,7 @@ backend/
 ├── routes/             # Définition des routes
 │   ├── authRoutes.js
 │   ├── itemRoutes.js
+│   ├── userRoutes.js
 │   └── videoRoutes.js
 ├── services/           # Services métier
 │   ├── authService.js
@@ -483,6 +554,7 @@ backend/
 | `PORT` | Port du serveur | `8000` |
 | `MONGO_URI` | URI de connexion MongoDB | `mongodb+srv://user:pass@...` |
 | `JWT_SECRET` | Clé secrète JWT | `votre-clé-très-secrète` |
+| `ADMIN_API_KEY` | Clé admin serveur (header x-admin-key) | `votre-cle-admin-longue` |
 | `CLOUDINARY_NAME` | Nom Cloudinary | `your-cloud-name` |
 | `CLOUDINARY_API_KEY` | Clé API Cloudinary | `api-key` |
 | `CLOUDINARY_API_SECRET` | Secret API Cloudinary | `api-secret` |
@@ -510,6 +582,11 @@ backend/
 - Vérifiez que le token est envoyé dans l'en-tête `Authorization: Bearer <token>`
 - Vérifiez que le token n'a pas expiré (10 jours)
 - Vérifiez que `JWT_SECRET` est correctement défini
+
+### Erreur admin `403 Acces admin refuse`
+- Vérifiez le header `x-admin-key` dans Postman
+- Vérifiez que la valeur du header correspond exactement à `ADMIN_API_KEY`
+- Vérifiez que `ADMIN_API_KEY` est bien défini dans Render (puis redeploy)
 
 ## 📝 License
 

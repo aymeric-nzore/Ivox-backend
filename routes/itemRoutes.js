@@ -1,5 +1,6 @@
 import express from "express";
 import authMiddleware from "../middlewares/authMiddleware.js";
+import adminMiddleware from "../middlewares/adminMiddleware.js";
 import {
   uploadShopItem,
   buyShopItem,
@@ -23,7 +24,7 @@ const uploadItem = (req, res, next) => {
 //POST
 router.post(
   "/upload",
-  authMiddleware,
+  adminMiddleware,
   uploadItem,
   uploadShopItem,
 );
@@ -32,5 +33,5 @@ router.post("/:id/buy", authMiddleware, buyShopItem);
 router.get("/", getAllItems);
 router.get("/:id", getOneItem);
 //DELETE
-router.delete("/:id", deleteShopItem);
+router.delete("/:id", adminMiddleware, deleteShopItem);
 export default router;

@@ -8,7 +8,9 @@ export const registerUser = async (req, res) => {
   const normalizedPassword = password?.trim();
 
   if (!process.env.JWT_SECRET) {
-    return res.status(500).json({ message: "Configuration serveur manquante: JWT_SECRET" });
+    return res
+      .status(500)
+      .json({ message: "Configuration serveur manquante: JWT_SECRET" });
   }
 
   if (!normalizedUsername || !normalizedEmail || !normalizedPassword) {
@@ -32,16 +34,22 @@ export const registerUser = async (req, res) => {
   } catch (error) {
     console.log("registerUser error:", error.message);
     if (error.code === 11000) {
-      return res.status(400).json({ message: "Nom d'utilisateur ou email deja utilise" });
+      return res
+        .status(400)
+        .json({ message: "Nom d'utilisateur ou email deja utilise" });
     }
     if (error.name === "ValidationError") {
       const firstError = Object.values(error.errors || {})[0]?.message;
-      return res.status(400).json({ message: firstError || "Donnees invalides" });
+      return res
+        .status(400)
+        .json({ message: firstError || "Donnees invalides" });
     }
     if (error.message?.toLowerCase().includes("buffering timed out")) {
       return res.status(500).json({ message: "Base de donnees indisponible" });
     }
-    return res.status(500).json({ message: "Erreur lors de l'inscription", detail: error.message });
+    return res
+      .status(500)
+      .json({ message: "Erreur lors de l'inscription", detail: error.message });
   }
 };
 
@@ -49,7 +57,9 @@ export const loginUser = async (req, res) => {
   const { usernameOrEmail, password } = req.body;
 
   if (!usernameOrEmail || !password) {
-    return res.status(400).json({ message: "Identifiants et mot de passe requis" });
+    return res
+      .status(400)
+      .json({ message: "Identifiants et mot de passe requis" });
   }
 
   try {
@@ -97,28 +107,5 @@ export const deleteAccount = async (req, res) => {
   } catch (e) {
     console.log(e);
     return res.status(500).json({ message: "Erreur serveur" });
-  }
-};
-
-export const getAllUsers = async (_req, res) => {
-  try {
-    const users = await User.find().select("-password").sort({ createdAt: -1 });
-    return res.status(200).json(users);
-  } catch (error) {
-    console.log("getAllUsers error:", error.message);
-    return res.status(500).json({ message: "Erreur lors de la recuperation des utilisateurs" });
-  }
-};
-
-export const getOneUser = async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id).select("-password");
-    if (!user) {
-      return res.status(404).json({ message: "Utilisateur non trouve" });
-    }
-    return res.status(200).json(user);
-  } catch (error) {
-    console.log("getOneUser error:", error.message);
-    return res.status(500).json({ message: "Erreur lors de la recuperation de l'utilisateur" });
   }
 };
