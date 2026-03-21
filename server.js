@@ -8,7 +8,7 @@ import authRoutes from "./routes/authRoutes.js";
 import uploadVideoRoutes from "./routes/videoRoutes.js";
 import itemRoutes from "./routes/itemRoutes.js";
 import registerSocketHandlers from "./sockets/registerSocketHandlers.js";
-connectDB();
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -30,6 +30,12 @@ app.set("io", io);
 registerSocketHandlers(io);
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, function () {
-  console.log("Server started");
-});
+
+const startServer = async () => {
+  await connectDB();
+  server.listen(PORT, function () {
+    console.log(`Server started on port ${PORT}`);
+  });
+};
+
+startServer();

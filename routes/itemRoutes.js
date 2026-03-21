@@ -11,11 +11,20 @@ import { uploadItemMiddleware } from "../middlewares/itemMiddleware.js";
 
 const router = express.Router();
 
+const uploadItem = (req, res, next) => {
+  uploadItemMiddleware.single("file")(req, res, (error) => {
+    if (error) {
+      return res.status(400).json({ message: error.message });
+    }
+    return next();
+  });
+};
+
 //POST
 router.post(
   "/upload",
   authMiddleware,
-  uploadItemMiddleware.single("file"),
+  uploadItem,
   uploadShopItem,
 );
 router.post("/:id/buy", authMiddleware, buyShopItem);

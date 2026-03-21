@@ -1,7 +1,9 @@
 import multer from "multer";
+import fs from "fs";
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
+    fs.mkdirSync("uploads/items", { recursive: true });
     cb(null, "uploads/items");
   },
   filename: (req, file, cb) => {
@@ -20,7 +22,12 @@ const normalizeType = (value) =>
 
 const itemFilter = (req, file, cb) => {
   const type = normalizeType(
-    req.body?.itemType || req.params?.itemType || req.headers["x-item-type"],
+    req.body?.itemType ||
+      req.query?.itemType ||
+      req.body?.type ||
+      req.query?.type ||
+      req.params?.itemType ||
+      req.headers["x-item-type"],
   );
   const allowedTypes = ALLOWED_TYPES_BY_ITEM[type];
 
