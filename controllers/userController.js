@@ -67,6 +67,9 @@ export const updateUserRole = async (req, res) => {
   try {
     const userId = req.params.id;
     const user = await User.findByIdAndUpdate(userId, { role: "creator" });
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouve" });
+    }
     return res.status(200).json({
       message: "Nouveau créateur de contenus",
       username: user.username,
@@ -78,3 +81,4 @@ export const updateUserRole = async (req, res) => {
       .json({ message: "Erreur lors de la mise a jour du role" });
   }
 };
+

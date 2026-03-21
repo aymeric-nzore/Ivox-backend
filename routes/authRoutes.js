@@ -2,6 +2,7 @@ import express from "express";
 import {
   registerUser,
   loginUser,
+  logoutUser,
   deleteAccount,
   googleAuthCallback,
 } from "../controllers/authController.js";
@@ -13,6 +14,7 @@ const router = express.Router();
 //POST
 router.post("/register", registerUser);
 router.post("/login", loginUser);
+router.post("/logout", authMiddleware, logoutUser);
 
 //DELETE
 router.delete("/deleteAccount", authMiddleware, deleteAccount);

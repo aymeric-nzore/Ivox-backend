@@ -100,10 +100,41 @@ export const googleAuthCallback = async (req, res) => {
     userId: req.user._id,
   });
 };
+
+export const logoutUser = async (req, res) => {
+  try {
+    await User.findByIdAndUpdate(req.user.id, {
+      status: "offline",
+      lastSeen: new Date(),
+    });
+
+    return res.status(200).json({
+      message: "Déconnexion reussie",
+    });
+  } catch (error) {
+    console.log("logoutUser error:", error.message);
+    return res.status(500).json({ message: "Erreur lors de la déconnexion" });
+  }
+};
+
 export const deleteAccount = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.user.id);
-    return res.json({ message: "Compte Supprimé" });
+    const targetUserId = req.params.id || req.user?.id;
+    if (!targetUserId) {
+      return res
+        .status(400)
+        .json({ message: "Identifiant utilisateur manquant" });
+    }
+
+    const user = await User.findByIdAndDelete(targetUserId);
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouve" });
+    }
+
+    return res.status(200).json({
+      message: "Compte Supprime",
+      userId: user._id,
+    });
   } catch (e) {
     console.log(e);
     return res.status(500).json({ message: "Erreur serveur" });

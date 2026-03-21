@@ -513,6 +513,7 @@ backend/
 │   ├── authController.js
 │   ├── ItemController.js
 │   ├── messageController.js
+│   ├── userController.js
 │   └── VideoController.js
 ├── middlewares/         # Middlewares Express
 │   ├── authMiddleware.js
@@ -533,15 +534,13 @@ backend/
 │   ├── itemRoutes.js
 │   ├── userRoutes.js
 │   └── videoRoutes.js
-├── services/           # Services métier
-│   ├── authService.js
-│   └── chatService.js
 ├── sockets/            # Gestion Socket.IO
 │   └── registerSocketHandlers.js
 ├── tests/              # Tests Jest
 ├── utils/              # Fonctions utilitaires
 │   ├── chatHelper.js
-│   └── generateToken.js
+│   ├── generateToken.js
+│   └── socketEmitter.js
 ├── server.js           # Point d'entrée du serveur
 ├── package.json        # Dépendances et scripts
 └── jest.config.json    # Configuration Jest
