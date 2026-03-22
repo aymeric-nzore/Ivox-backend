@@ -1,4 +1,27 @@
 import User from "../models/user.js";
+
+export const getLeaderboard = async (_req, res) => {
+  try {
+    const users = await User.find()
+      .select("username email level xp status")
+      .sort({ level: -1, xp: -1, username: 1 });
+
+    return res.status(200).json(
+      users.map((user) => ({
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        level: user.level ?? 0,
+        xp: user.xp ?? 0,
+        status: user.status ?? "offline",
+      })),
+    );
+  } catch (error) {
+    console.log("getLeaderboard error:", error.message);
+    return res.status(500).json({ message: "Erreur lors du chargement du classement" });
+  }
+};
+
 export const getAllUsers = async (_req, res) => {
   try {
     const users = await User.find().select("-password").sort({ createdAt: -1 });

@@ -170,3 +170,31 @@ export const markMessageAsReadHandler = async (req, res) => {
     return res.status(500).json({ message: "Erreur lecture message" });
   }
 };
+
+export const reportMessageHandler = async (req, res) => {
+  const { messageId } = req.params;
+  const { reason } = req.body || {};
+
+  if (!messageId) {
+    return res.status(400).json({ message: "messageId est requis" });
+  }
+
+  try {
+    const message = await Message.findOne({ messageId });
+    if (!message) {
+      return res.status(404).json({ message: "Message introuvable" });
+    }
+
+    // Projet academique: on journalise le signalement en attendant un module moderation.
+    console.log("Message reported", {
+      messageId,
+      reportedBy: req.user?._id?.toString(),
+      reason: reason || "unspecified",
+      createdAt: new Date().toISOString(),
+    });
+
+    return res.status(200).json({ message: "Message signale" });
+  } catch (_error) {
+    return res.status(500).json({ message: "Erreur signalement message" });
+  }
+};
