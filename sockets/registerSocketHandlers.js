@@ -5,6 +5,13 @@ import {
 } from "../controllers/messageController.js";
 import { getRoomId } from "../utils/chatHelper.js";
 import User from "../models/user.js";
+import {
+  emitMessageEvents,
+  emitPresence,
+  emitReadEvents,
+  emitTypingEvents,
+  joinUserChannels,
+} from "../services/notificationService.js";
 
 const onlineUsers = new Map();
 
@@ -18,7 +25,7 @@ const registerSocketHandlers = (io) => {
 
       const uid = userId.toString();
       socket.userId = uid;
-      socket.join(uid);
+      joinUserChannels(socket, uid);
       onlineUsers.set(uid, socket.id);
 
       try {
@@ -27,10 +34,9 @@ const registerSocketHandlers = (io) => {
           lastSeen: new Date(),
         });
       } catch (_error) {
-        // Projet academique: on continue meme si la MAJ base echoue
       }
 
-      io.emit("user_presence", {
+      emitPresence(io, {
         userId: uid,
         status: "online",
         lastSeen: new Date().toISOString(),
@@ -93,9 +99,7 @@ const registerSocketHandlers = (io) => {
           receiver,
           message,
         });
-
-        io.to(receiver.toString()).emit("message_new", created);
-        io.to(socket.userId).emit("message_sent", created);
+        emitMessageEvents(io, created.toObject ? created.toObject() : created);
       } catch (error) {
         socket.emit("message_error", { message: error.message });
       }
@@ -121,10 +125,11 @@ const registerSocketHandlers = (io) => {
           return;
         }
 
-        io.to(socket.userId).emit("message_read", updated);
-        if (senderId) {
-          io.to(senderId.toString()).emit("message_read", updated);
-        }
+        emitReadEvents(
+          io,
+          updated.toObject ? updated.toObject() : updated,
+          socket.userId,
+        );
       } catch (error) {
         socket.emit("message_error", { message: error.message });
       }
@@ -135,9 +140,7 @@ const registerSocketHandlers = (io) => {
         return;
       }
 
-      io.to(toUserId.toString()).emit("typing_start", {
-        fromUserId: socket.userId,
-      });
+      emitTypingEvents(io, toUserId, socket.userId, true);
     });
 
     socket.on("typing_stop", ({ toUserId } = {}) => {
@@ -145,9 +148,7 @@ const registerSocketHandlers = (io) => {
         return;
       }
 
-      io.to(toUserId.toString()).emit("typing_stop", {
-        fromUserId: socket.userId,
-      });
+      emitTypingEvents(io, toUserId, socket.userId, false);
     });
 
     socket.on("disconnect", () => {
@@ -160,7 +161,7 @@ const registerSocketHandlers = (io) => {
           lastSeen: offlineAt,
         }).catch(() => {});
 
-        io.emit("user_presence", {
+        emitPresence(io, {
           userId: socket.userId,
           status: "offline",
           lastSeen: offlineAt.toISOString(),

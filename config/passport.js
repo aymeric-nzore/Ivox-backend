@@ -12,17 +12,35 @@ passport.use(
     },
     async (refreshToken, accessToken, profile, done) => {
       try {
-        const email = profile.email?.[0]?.value || null;
-        const username =
-          (profile.displayName || "").trim() ||
+        const email = profile.emails?.[0]?.value?.toLowerCase() || null;
+        const baseUsername =
+          (profile.displayName || "").trim().toLowerCase() ||
           (email ? email.split("@")[0] : "user");
-        //Inscription avec google
-        const user = await User.create({
-          googleId: profile.id,
-          email: email,
-          username: username,
-          password: `google_${profile.id}_${Date.now()}`,
+
+        let user = await User.findOne({
+          $or: [{ googleId: profile.id }, ...(email ? [{ email }] : [])],
         });
+
+        if (!user) {
+          let usernameCandidate = baseUsername;
+          let suffix = 1;
+
+          while (await User.exists({ username: usernameCandidate })) {
+            usernameCandidate = `${baseUsername}${suffix}`;
+            suffix += 1;
+          }
+
+          user = await User.create({
+            googleId: profile.id,
+            email,
+            username: usernameCandidate,
+            password: `google_${profile.id}_${Date.now()}`,
+          });
+        } else if (!user.googleId) {
+          user.googleId = profile.id;
+          await user.save();
+        }
+
         return done(null, user);
       } catch (error) {
         return done(error, null);

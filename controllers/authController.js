@@ -1,5 +1,8 @@
 import User from "../models/user.js";
 import { generateToken } from "../utils/generateToken.js";
+import { OAuth2Client } from "google-auth-library";
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const registerUser = async (req, res) => {
   const { username, email, password } = req.body;
@@ -95,9 +98,87 @@ export const googleAuthCallback = async (req, res) => {
     return res.status(401).json({ message: "Google authentication failed" });
   }
 
+  const token = generateToken(req.user);
+  const state = typeof req.query.state === "string" ? req.query.state : "";
+  const isMobileCallback = state.startsWith("ivox://");
+
+  if (isMobileCallback) {
+    const redirectUrl = `${state}${state.includes("?") ? "&" : "?"}token=${encodeURIComponent(token)}&userId=${encodeURIComponent(String(req.user._id))}`;
+    return res.redirect(redirectUrl);
+  }
+
   return res.status(200).json({
-    token: generateToken(req.user),
+    token,
     userId: req.user._id,
+  });
+};
+
+export const loginGoogleMobile = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) {
+      return res.status(400).json({ message: "idToken requis" });
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const email = payload?.email?.toLowerCase();
+    const googleId = payload?.sub;
+
+    if (!email || !googleId) {
+      return res.status(401).json({ message: "Compte Google invalide" });
+    }
+
+    let user = await User.findOne({
+      $or: [{ googleId }, { email }],
+    });
+
+    if (!user) {
+      const baseUsername =
+        (payload?.name || email.split("@")[0] || "user").toLowerCase();
+      let username = baseUsername;
+      let suffix = 1;
+
+      while (await User.exists({ username })) {
+        username = `${baseUsername}${suffix}`;
+        suffix += 1;
+      }
+
+      user = await User.create({
+        googleId,
+        email,
+        username,
+        password: `google_${googleId}_${Date.now()}`,
+      });
+    } else if (!user.googleId) {
+      user.googleId = googleId;
+      await user.save();
+    }
+
+    return res.status(200).json({
+      token: generateToken({ _id: user._id }),
+      userId: user._id,
+    });
+  } catch (error) {
+    return res.status(401).json({ message: "Connexion Google echouee" });
+  }
+};
+
+export const getMe = async (req, res) => {
+  if (!req.user?._id) {
+    return res.status(401).json({ message: "Non authentifie" });
+  }
+
+  return res.status(200).json({
+    id: req.user._id,
+    username: req.user.username,
+    email: req.user.email,
+    status: req.user.status,
+    lastSeen: req.user.lastSeen,
   });
 };
 
