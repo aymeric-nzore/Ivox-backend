@@ -209,6 +209,12 @@ export const getMe = async (req, res) => {
     return res.status(401).json({ message: "Non authentifie" });
   }
 
+  const ownedItems = (req.user.ownedItems || []).map((item) => ({
+    itemId: String(item.itemId),
+    itemName: item.itemName,
+    type: item.type,
+  }));
+
   return res.status(200).json({
     id: req.user._id,
     username: req.user.username,
@@ -219,6 +225,7 @@ export const getMe = async (req, res) => {
     isPublicProfile: req.user.isPublicProfile ?? true,
     level: req.user.level ?? 0,
     xp: req.user.xp ?? 0,
+    ownedItems,
   });
 };
 
