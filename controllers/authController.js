@@ -225,6 +225,7 @@ export const getMe = async (req, res) => {
     isPublicProfile: req.user.isPublicProfile ?? true,
     level: req.user.level ?? 0,
     xp: req.user.xp ?? 0,
+    coins: req.user.coins ?? 0,
     ownedItems,
   });
 };
