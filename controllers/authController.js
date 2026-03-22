@@ -5,6 +5,18 @@ import cloudinary from "../config/cloudinary.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+const decodeJwtPayload = (token) => {
+  try {
+    const parts = (token || "").split(".");
+    if (parts.length < 2) return null;
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const json = Buffer.from(base64, "base64").toString("utf8");
+    return JSON.parse(json);
+  } catch (_error) {
+    return null;
+  }
+};
+
 export const registerUser = async (req, res) => {
   const { username, email, password } = req.body;
   const normalizedUsername = username?.trim()?.toLowerCase();
@@ -121,9 +133,21 @@ export const loginGoogleMobile = async (req, res) => {
       return res.status(400).json({ message: "idToken requis" });
     }
 
+    const audiences = [
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_ANDROID_CLIENT_ID,
+    ].filter(Boolean);
+
+    if (audiences.length === 0) {
+      return res.status(500).json({
+        message: "Configuration Google manquante",
+        detail: "Set GOOGLE_CLIENT_ID or GOOGLE_ANDROID_CLIENT_ID",
+      });
+    }
+
     const ticket = await googleClient.verifyIdToken({
       idToken,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: audiences.length === 1 ? audiences[0] : audiences,
     });
 
     const payload = ticket.getPayload();
@@ -165,9 +189,17 @@ export const loginGoogleMobile = async (req, res) => {
       userId: user._id,
     });
   } catch (error) {
+    const tokenPayload = decodeJwtPayload(req.body?.idToken);
+    const receivedAudience = tokenPayload?.aud || null;
+
     return res.status(401).json({
       message: "Connexion Google echouee",
       detail: error?.message || "invalid_google_token",
+      receivedAudience,
+      expectedAudience: [
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_ANDROID_CLIENT_ID,
+      ].filter(Boolean),
     });
   }
 };
