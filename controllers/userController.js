@@ -156,9 +156,9 @@ export const sendFriendRequest = async (req, res) => {
 export const getFriendRequests = async (req, res) => {
   try {
     const user = await User.findById(req.user?._id)
-      .populate("friendRequestsReceived", "username email status")
-      .populate("friendRequestsSent", "username email status")
-      .populate("friends", "username email status");
+      .populate("friendRequestsReceived", "username email status photoUrl")
+      .populate("friendRequestsSent", "username email status photoUrl")
+      .populate("friends", "username email status photoUrl");
 
     if (!user) {
       return res.status(404).json({ message: "Utilisateur introuvable" });
@@ -170,18 +170,21 @@ export const getFriendRequests = async (req, res) => {
         username: u.username,
         email: u.email,
         status: u.status,
+        photoUrl: u.photoUrl || null,
       })),
       sent: user.friendRequestsSent.map((u) => ({
         id: u._id,
         username: u.username,
         email: u.email,
         status: u.status,
+        photoUrl: u.photoUrl || null,
       })),
       friends: user.friends.map((u) => ({
         id: u._id,
         username: u.username,
         email: u.email,
         status: u.status,
+        photoUrl: u.photoUrl || null,
       })),
     });
   } catch (_error) {
@@ -229,6 +232,15 @@ export const respondFriendRequest = async (req, res) => {
 
     await Promise.all([currentUser.save(), requester.save()]);
 
+    emitAppNotification(req.app.get("io"), requester._id, {
+      type: "friend_request_response",
+      toUserId: requester._id,
+      fromUserId: currentUser._id,
+      fromUsername: currentUser.username,
+      action,
+      createdAt: new Date().toISOString(),
+    });
+
     return res.status(200).json({
       message: action === "accept" ? "Demande acceptee" : "Demande refusee",
     });
@@ -271,6 +283,53 @@ export const blockUser = async (req, res) => {
     return res.status(200).json({ message: "Utilisateur bloque" });
   } catch (_error) {
     return res.status(500).json({ message: "Erreur blocage utilisateur" });
+  }
+};
+
+export const getBlockedUsers = async (req, res) => {
+  try {
+    const user = await User.findById(req.user?._id).populate(
+      "blockedUser",
+      "username email status photoUrl",
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur introuvable" });
+    }
+
+    return res.status(200).json(
+      user.blockedUser.map((u) => ({
+        id: u._id,
+        username: u.username,
+        email: u.email,
+        status: u.status,
+        photoUrl: u.photoUrl || null,
+      })),
+    );
+  } catch (_error) {
+    return res.status(500).json({ message: "Erreur chargement utilisateurs bloques" });
+  }
+};
+
+export const unblockUser = async (req, res) => {
+  try {
+    const currentUserId = req.user?._id?.toString();
+    const targetId = req.params.targetUserId?.toString();
+    if (!currentUserId || !targetId) {
+      return res.status(400).json({ message: "Identifiants invalides" });
+    }
+
+    const user = await User.findById(currentUserId);
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur introuvable" });
+    }
+
+    user.blockedUser = user.blockedUser.filter((id) => id.toString() !== targetId);
+    await user.save();
+
+    return res.status(200).json({ message: "Utilisateur debloque" });
+  } catch (_error) {
+    return res.status(500).json({ message: "Erreur deblocage utilisateur" });
   }
 };
 

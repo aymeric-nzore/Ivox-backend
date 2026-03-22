@@ -61,7 +61,13 @@ export const getChatMessages = async (chatRoomId) => {
 };
 
 export const getChatUsers = async (currentUserId) => {
-  const users = await User.find({ _id: { $ne: currentUserId } })
+  const currentUser = await User.findById(currentUserId).select("blockedUser");
+  const blockedIds = (currentUser?.blockedUser || []).map((id) => id.toString());
+
+  const users = await User.find({
+    _id: { $ne: currentUserId, $nin: blockedIds },
+    isPublicProfile: true,
+  })
     .select("username email status lastSeen photoUrl")
     .sort({ username: 1 });
 

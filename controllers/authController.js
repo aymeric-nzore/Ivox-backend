@@ -184,9 +184,45 @@ export const getMe = async (req, res) => {
     status: req.user.status,
     lastSeen: req.user.lastSeen,
     photoUrl: req.user.photoUrl || null,
+    isPublicProfile: req.user.isPublicProfile ?? true,
     level: req.user.level ?? 0,
     xp: req.user.xp ?? 0,
   });
+};
+
+export const updateProfilePrivacy = async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    const { isPublicProfile } = req.body || {};
+
+    if (!userId) {
+      return res.status(401).json({ message: "Non authentifie" });
+    }
+
+    if (typeof isPublicProfile !== "boolean") {
+      return res.status(400).json({ message: "isPublicProfile doit etre un booleen" });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { isPublicProfile },
+      { new: true },
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "Utilisateur non trouve" });
+    }
+
+    return res.status(200).json({
+      message: "Visibilite du profil mise a jour",
+      isPublicProfile: updatedUser.isPublicProfile,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Erreur mise a jour visibilite profil",
+      detail: error?.message,
+    });
+  }
 };
 
 export const uploadProfileImage = async (req, res) => {

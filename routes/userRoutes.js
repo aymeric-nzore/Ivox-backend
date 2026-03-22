@@ -3,11 +3,13 @@ import {
   blockUser,
   getFriendRequests,
   getAllUsers,
+  getBlockedUsers,
   getLeaderboard,
   getOneUser,
   patchUserCoinsById,
   respondFriendRequest,
   sendFriendRequest,
+  unblockUser,
   updateUserRole,
 } from "../controllers/userController.js";
 import { deleteAccount } from "../controllers/authController.js";
@@ -22,6 +24,7 @@ router.patch("/:id/updateRole", adminMiddleware, updateUserRole);
 //GET
 router.get("/leaderboard", authMiddleware, getLeaderboard);
 router.get("/friends/requests", authMiddleware, getFriendRequests);
+router.get("/blocked", authMiddleware, getBlockedUsers);
 router.get("/", adminMiddleware, getAllUsers);
 router.get("/:id", adminMiddleware, getOneUser);
 
@@ -33,6 +36,7 @@ router.post(
   respondFriendRequest,
 );
 router.post("/block/:targetUserId", authMiddleware, blockUser);
+router.post("/unblock/:targetUserId", authMiddleware, unblockUser);
 
 //DELETE
 router.delete("/:id", adminMiddleware, deleteAccount);

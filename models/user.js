@@ -78,7 +78,7 @@ const userSchema = new mongoose.Schema(
     ownedItems: [
       {
         itemId: mongoose.Schema.Types.ObjectId,
-        itemName : String,
+        itemName: String,
         type: {
           type: String,
           enum: ["song", "avatar", "animation"],
@@ -94,6 +94,10 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
       min: 0,
+    },
+    isPublicProfile: {
+      type: Boolean,
+      default: true,
     },
   },
   { timestamps: true },

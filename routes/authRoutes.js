@@ -8,6 +8,7 @@ import {
   loginGoogleMobile,
   getMe,
   uploadProfileImage,
+  updateProfilePrivacy,
 } from "../controllers/authController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 import passport from "../config/passport.js";
@@ -26,6 +27,7 @@ router.post(
   uploadImageMiddleware.single("image"),
   uploadProfileImage,
 );
+router.patch("/privacy", authMiddleware, updateProfilePrivacy);
 
 //DELETE
 router.delete("/deleteAccount", authMiddleware, deleteAccount);
