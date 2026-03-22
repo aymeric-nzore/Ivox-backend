@@ -164,7 +164,10 @@ export const loginGoogleMobile = async (req, res) => {
       userId: user._id,
     });
   } catch (error) {
-    return res.status(401).json({ message: "Connexion Google echouee" });
+    return res.status(401).json({
+      message: "Connexion Google echouee",
+      detail: error?.message || "invalid_google_token",
+    });
   }
 };
 

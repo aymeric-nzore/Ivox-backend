@@ -48,6 +48,18 @@ const userSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
+    friendRequestsReceived: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    friendRequestsSent: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
     blockedUser: [
       {
         type: mongoose.Schema.Types.ObjectId,

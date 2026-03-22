@@ -1,4 +1,5 @@
 import User from "../models/user.js";
+import { emitAppNotification } from "../services/notificationService.js";
 
 export const getLeaderboard = async (_req, res) => {
   try {
@@ -102,6 +103,174 @@ export const updateUserRole = async (req, res) => {
     return res
       .status(500)
       .json({ message: "Erreur lors de la mise a jour du role" });
+  }
+};
+
+export const sendFriendRequest = async (req, res) => {
+  try {
+    const senderId = req.user?._id?.toString();
+    const targetId = req.params.targetUserId?.toString();
+
+    if (!senderId || !targetId) {
+      return res.status(400).json({ message: "Identifiants invalides" });
+    }
+    if (senderId === targetId) {
+      return res.status(400).json({ message: "Impossible de s'ajouter soi-meme" });
+    }
+
+    const [sender, target] = await Promise.all([
+      User.findById(senderId),
+      User.findById(targetId),
+    ]);
+
+    if (!sender || !target) {
+      return res.status(404).json({ message: "Utilisateur introuvable" });
+    }
+
+    if (sender.friends.some((id) => id.toString() === targetId)) {
+      return res.status(400).json({ message: "Deja amis" });
+    }
+
+    if (sender.friendRequestsSent.some((id) => id.toString() === targetId)) {
+      return res.status(400).json({ message: "Demande deja envoyee" });
+    }
+
+    sender.friendRequestsSent.push(target._id);
+    target.friendRequestsReceived.push(sender._id);
+
+    await Promise.all([sender.save(), target.save()]);
+
+    emitAppNotification(req.app.get("io"), target._id, {
+      type: "friend_request",
+      fromUserId: sender._id,
+      fromUsername: sender.username,
+      createdAt: new Date().toISOString(),
+    });
+
+    return res.status(200).json({ message: "Demande d'ami envoyee" });
+  } catch (error) {
+    return res.status(500).json({ message: "Erreur envoi demande d'ami" });
+  }
+};
+
+export const getFriendRequests = async (req, res) => {
+  try {
+    const user = await User.findById(req.user?._id)
+      .populate("friendRequestsReceived", "username email status")
+      .populate("friendRequestsSent", "username email status")
+      .populate("friends", "username email status");
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur introuvable" });
+    }
+
+    return res.status(200).json({
+      received: user.friendRequestsReceived.map((u) => ({
+        id: u._id,
+        username: u.username,
+        email: u.email,
+        status: u.status,
+      })),
+      sent: user.friendRequestsSent.map((u) => ({
+        id: u._id,
+        username: u.username,
+        email: u.email,
+        status: u.status,
+      })),
+      friends: user.friends.map((u) => ({
+        id: u._id,
+        username: u.username,
+        email: u.email,
+        status: u.status,
+      })),
+    });
+  } catch (_error) {
+    return res.status(500).json({ message: "Erreur chargement demandes d'amis" });
+  }
+};
+
+export const respondFriendRequest = async (req, res) => {
+  try {
+    const currentUserId = req.user?._id?.toString();
+    const requesterId = req.params.requesterId?.toString();
+    const action = (req.body?.action || "").toString().toLowerCase();
+
+    if (!currentUserId || !requesterId) {
+      return res.status(400).json({ message: "Identifiants invalides" });
+    }
+    if (!["accept", "reject"].includes(action)) {
+      return res.status(400).json({ message: "Action invalide" });
+    }
+
+    const [currentUser, requester] = await Promise.all([
+      User.findById(currentUserId),
+      User.findById(requesterId),
+    ]);
+
+    if (!currentUser || !requester) {
+      return res.status(404).json({ message: "Utilisateur introuvable" });
+    }
+
+    currentUser.friendRequestsReceived = currentUser.friendRequestsReceived.filter(
+      (id) => id.toString() !== requesterId,
+    );
+    requester.friendRequestsSent = requester.friendRequestsSent.filter(
+      (id) => id.toString() !== currentUserId,
+    );
+
+    if (action === "accept") {
+      if (!currentUser.friends.some((id) => id.toString() === requesterId)) {
+        currentUser.friends.push(requester._id);
+      }
+      if (!requester.friends.some((id) => id.toString() === currentUserId)) {
+        requester.friends.push(currentUser._id);
+      }
+    }
+
+    await Promise.all([currentUser.save(), requester.save()]);
+
+    return res.status(200).json({
+      message: action === "accept" ? "Demande acceptee" : "Demande refusee",
+    });
+  } catch (_error) {
+    return res.status(500).json({ message: "Erreur traitement demande d'ami" });
+  }
+};
+
+export const blockUser = async (req, res) => {
+  try {
+    const currentUserId = req.user?._id?.toString();
+    const targetId = req.params.targetUserId?.toString();
+    if (!currentUserId || !targetId) {
+      return res.status(400).json({ message: "Identifiants invalides" });
+    }
+
+    if (currentUserId === targetId) {
+      return res.status(400).json({ message: "Action invalide" });
+    }
+
+    const user = await User.findById(currentUserId);
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur introuvable" });
+    }
+
+    if (!user.blockedUser.some((id) => id.toString() === targetId)) {
+      user.blockedUser.push(targetId);
+    }
+
+    user.friendRequestsReceived = user.friendRequestsReceived.filter(
+      (id) => id.toString() !== targetId,
+    );
+    user.friendRequestsSent = user.friendRequestsSent.filter(
+      (id) => id.toString() !== targetId,
+    );
+    user.friends = user.friends.filter((id) => id.toString() !== targetId);
+
+    await user.save();
+
+    return res.status(200).json({ message: "Utilisateur bloque" });
+  } catch (_error) {
+    return res.status(500).json({ message: "Erreur blocage utilisateur" });
   }
 };
 
