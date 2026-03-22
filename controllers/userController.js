@@ -4,7 +4,7 @@ import { emitAppNotification } from "../services/notificationService.js";
 export const getLeaderboard = async (_req, res) => {
   try {
     const users = await User.find()
-      .select("username email level xp status")
+      .select("username email level xp status photoUrl")
       .sort({ level: -1, xp: -1, username: 1 });
 
     return res.status(200).json(
@@ -15,6 +15,7 @@ export const getLeaderboard = async (_req, res) => {
         level: user.level ?? 0,
         xp: user.xp ?? 0,
         status: user.status ?? "offline",
+        photoUrl: user.photoUrl,
       })),
     );
   } catch (error) {
