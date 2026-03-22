@@ -1,6 +1,7 @@
 import User from "../models/user.js";
 import { generateToken } from "../utils/generateToken.js";
 import { OAuth2Client } from "google-auth-library";
+import cloudinary from "../config/cloudinary.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -182,7 +183,47 @@ export const getMe = async (req, res) => {
     email: req.user.email,
     status: req.user.status,
     lastSeen: req.user.lastSeen,
+    photoUrl: req.user.photoUrl || null,
+    level: req.user.level ?? 0,
+    xp: req.user.xp ?? 0,
   });
+};
+
+export const uploadProfileImage = async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    if (!userId) {
+      return res.status(401).json({ message: "Non authentifie" });
+    }
+
+    if (!req.file?.buffer) {
+      return res.status(400).json({ message: "Image manquante" });
+    }
+
+    const dataUri = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+    const uploaded = await cloudinary.uploader.upload(dataUri, {
+      folder: "ivox/profile",
+      public_id: `user_${userId}_${Date.now()}`,
+      overwrite: true,
+      resource_type: "image",
+    });
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { photoUrl: uploaded.secure_url },
+      { new: true },
+    );
+
+    return res.status(200).json({
+      message: "Photo de profil mise a jour",
+      photoUrl: updatedUser?.photoUrl || uploaded.secure_url,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Erreur upload image profil",
+      detail: error?.message,
+    });
+  }
 };
 
 export const logoutUser = async (req, res) => {

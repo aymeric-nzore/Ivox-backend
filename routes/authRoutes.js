@@ -7,9 +7,11 @@ import {
   googleAuthCallback,
   loginGoogleMobile,
   getMe,
+  uploadProfileImage,
 } from "../controllers/authController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 import passport from "../config/passport.js";
+import { uploadImageMiddleware } from "../middlewares/uploadImageMiddleware.js";
 
 const router = express.Router();
 
@@ -18,6 +20,12 @@ router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.post("/google/mobile", loginGoogleMobile);
 router.post("/logout", authMiddleware, logoutUser);
+router.post(
+  "/profile-image",
+  authMiddleware,
+  uploadImageMiddleware.single("image"),
+  uploadProfileImage,
+);
 
 //DELETE
 router.delete("/deleteAccount", authMiddleware, deleteAccount);

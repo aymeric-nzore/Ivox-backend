@@ -71,6 +71,10 @@ const userSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
     },
+    photoUrl: {
+      type: String,
+      default: null,
+    },
     ownedItems: [
       {
         itemId: mongoose.Schema.Types.ObjectId,

@@ -62,7 +62,7 @@ export const getChatMessages = async (chatRoomId) => {
 
 export const getChatUsers = async (currentUserId) => {
   const users = await User.find({ _id: { $ne: currentUserId } })
-    .select("username email status lastSeen")
+    .select("username email status lastSeen photoUrl")
     .sort({ username: 1 });
 
   return users.map((user) => ({
@@ -71,6 +71,7 @@ export const getChatUsers = async (currentUserId) => {
     email: user.email,
     status: user.status,
     lastSeen: user.lastSeen,
+    photoUrl: user.photoUrl || null,
   }));
 };
 
