@@ -414,12 +414,26 @@ export const forgotPassword = async (req, res) => {
 
     const code = generateOtpCode();
     user.resetCode = code;
-    user.resettCodeExpires = Date.now() + 1000 * 60;
+    user.resettCodeExpires = Date.now() + 1000 * 60; // 60 secondes
     await user.save();
-    await sendOTPEmail(email, code);
-    return res.status(200).json({ message: "OTP envoye" });
+    
+    try {
+      await sendOTPEmail(email, code);
+    } catch (emailError) {
+      console.error("Email send failed:", emailError.message);
+      return res.status(500).json({ 
+        message: "Erreur envoi email",
+        detail: emailError.message 
+      });
+    }
+    
+    return res.status(200).json({ message: "OTP envoye a l'email" });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    console.error("forgotPassword error:", error.message);
+    return res.status(500).json({ 
+      message: "Erreur lors du traitement forgotPassword",
+      detail: error.message 
+    });
   }
 };
 export const resetPassword = async (req, res) => {
