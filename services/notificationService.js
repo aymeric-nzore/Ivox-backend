@@ -15,8 +15,8 @@ export const emitToUser = (io, userId, eventName, payload) => {
   const id = userId?.toString();
   if (!io?.to || !id) return;
 
-  io.to(id).emit(eventName, payload);
-  io.to(toUserRoom(id)).emit(eventName, payload);
+  // Emit once to the union of legacy and dedicated rooms.
+  io.to(id).to(toUserRoom(id)).emit(eventName, payload);
 };
 
 export const emitAppNotification = (io, userId, payload) => {
