@@ -4,6 +4,7 @@ import Song from "../models/song.js";
 import Animation from "../models/animation.js";
 import Avatar from "../models/avatarItem.js";
 import { emitGlobalEvent, emitUserEvent } from "../utils/socketEmitter.js";
+import { sendPushToAllUsers } from "../services/pushNotificationService.js";
 
 //Ajouter un item
 export const uploadShopItem = async (req, res) => {
@@ -79,6 +80,19 @@ export const uploadShopItem = async (req, res) => {
       message: "Nouvel item ajouté à la boutique",
       item,
     });
+
+    if (type === "song") {
+      sendPushToAllUsers({
+        title: "Nouvelle musique disponible",
+        body: item.title,
+        data: {
+          type: "shop_item_created",
+          itemType: "song",
+          itemId: item._id,
+          title: item.title,
+        },
+      }).catch(() => {});
+    }
 
     return res.status(201).json(item);
   } catch (error) {

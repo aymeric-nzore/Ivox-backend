@@ -9,6 +9,8 @@ import {
   getMe,
   uploadProfileImage,
   updateProfilePrivacy,
+  registerFcmToken,
+  unregisterFcmToken,
 } from "../controllers/authController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 import passport from "../config/passport.js";
@@ -28,6 +30,8 @@ router.post(
   uploadProfileImage,
 );
 router.patch("/privacy", authMiddleware, updateProfilePrivacy);
+router.post("/fcm-token", authMiddleware, registerFcmToken);
+router.delete("/fcm-token", authMiddleware, unregisterFcmToken);
 
 //DELETE
 router.delete("/deleteAccount", authMiddleware, deleteAccount);

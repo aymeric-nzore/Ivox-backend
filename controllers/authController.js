@@ -302,6 +302,58 @@ export const uploadProfileImage = async (req, res) => {
   }
 };
 
+export const registerFcmToken = async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    const token = (req.body?.fcmToken || "").toString().trim();
+
+    if (!userId) {
+      return res.status(401).json({ message: "Non authentifie" });
+    }
+
+    if (!token) {
+      return res.status(400).json({ message: "fcmToken requis" });
+    }
+
+    await User.findByIdAndUpdate(userId, {
+      $addToSet: { fcmTokens: token },
+    });
+
+    return res.status(200).json({ message: "FCM token enregistre" });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Erreur enregistrement FCM token",
+      detail: error?.message,
+    });
+  }
+};
+
+export const unregisterFcmToken = async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    const token = (req.body?.fcmToken || "").toString().trim();
+
+    if (!userId) {
+      return res.status(401).json({ message: "Non authentifie" });
+    }
+
+    if (!token) {
+      return res.status(400).json({ message: "fcmToken requis" });
+    }
+
+    await User.findByIdAndUpdate(userId, {
+      $pull: { fcmTokens: token },
+    });
+
+    return res.status(200).json({ message: "FCM token supprime" });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Erreur suppression FCM token",
+      detail: error?.message,
+    });
+  }
+};
+
 export const logoutUser = async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.user.id, {

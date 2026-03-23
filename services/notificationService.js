@@ -1,3 +1,5 @@
+import { sendPushToUser } from "./pushNotificationService.js";
+
 export const toUserRoom = (userId) => `user:${userId}`;
 
 export const joinUserChannels = (socket, userId) => {
@@ -19,6 +21,31 @@ export const emitToUser = (io, userId, eventName, payload) => {
 
 export const emitAppNotification = (io, userId, payload) => {
   emitToUser(io, userId, "app_notification", payload);
+
+  const type = (payload?.type || "app").toString();
+  const titleByType = {
+    chat_message: "Nouveau message",
+    friend_request: "Nouvelle demande d'ami",
+    friend_request_response: "Reponse a votre demande d'ami",
+  };
+
+  const body =
+    payload?.preview ||
+    payload?.message ||
+    payload?.fromUsername ||
+    "Nouvelle notification";
+
+  sendPushToUser({
+    userId,
+    title: titleByType[type] || "IVOX",
+    body,
+    data: {
+      type,
+      fromUserId: payload?.fromUserId,
+      messageId: payload?.messageId,
+      createdAt: payload?.createdAt,
+    },
+  }).catch(() => {});
 };
 
 export const emitPresence = (io, payload) => {
