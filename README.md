@@ -327,8 +327,7 @@ socket.emit('user_join', {
 Rejoindre une conversation avec un autre utilisateur
 ```javascript
 socket.emit('chat_join', {
-  userId: '507f1f77bcf86cd799439011',
-  otherUserId: '507f1f77bcf86cd799439012'
+  withUserId: '507f1f77bcf86cd799439012'
 });
 ```
 
@@ -336,27 +335,24 @@ socket.emit('chat_join', {
 Récupérer l'historique des messages
 ```javascript
 socket.emit('chat_history', {
-  userId: '507f1f77bcf86cd799439011',
-  otherUserId: '507f1f77bcf86cd799439012'
+  withUserId: '507f1f77bcf86cd799439012'
 });
 ```
 
 #### `message_send`
-Envoyer un message
+Envoyer un message (supporté côté socket; l'app Flutter utilise surtout la route REST `/api/messages`)
 ```javascript
 socket.emit('message_send', {
-  senderId: '507f1f77bcf86cd799439011',
-  recipientId: '507f1f77bcf86cd799439012',
-  content: 'Salut! Comment vas-tu?'
+  receiver: '507f1f77bcf86cd799439012',
+  message: 'Salut! Comment vas-tu?'
 });
 ```
 
 #### `message_read`
-Marquer les messages comme lus
+Marquer un message comme lu
 ```javascript
 socket.emit('message_read', {
-  userId: '507f1f77bcf86cd799439011',
-  otherUserId: '507f1f77bcf86cd799439012'
+  messageId: 'b3d5f8a0-...'
 });
 ```
 
@@ -364,8 +360,7 @@ socket.emit('message_read', {
 Indiquer que l'utilisateur tape un message
 ```javascript
 socket.emit('typing_start', {
-  senderId: '507f1f77bcf86cd799439011',
-  recipientId: '507f1f77bcf86cd799439012'
+  toUserId: '507f1f77bcf86cd799439012'
 });
 ```
 
@@ -373,18 +368,18 @@ socket.emit('typing_start', {
 Indiquer que l'utilisateur a arrêté de taper
 ```javascript
 socket.emit('typing_stop', {
-  senderId: '507f1f77bcf86cd799439011',
-  recipientId: '507f1f77bcf86cd799439012'
+  toUserId: '507f1f77bcf86cd799439012'
 });
 ```
 
 ### Serveur → Client
 
-#### `user_online`
-Notification de présence utilisateur
+#### `user_presence`
+Présence utilisateur en temps réel
 ```javascript
-socket.on('user_online', (data) => {
-  console.log('Utilisateur connecté:', data.userId);
+socket.on('user_presence', (data) => {
+  // { userId, status: 'online'|'offline', lastSeen }
+  console.log('Presence:', data);
 });
 ```
 
@@ -392,7 +387,8 @@ socket.on('user_online', (data) => {
 Réception d'un nouveau message
 ```javascript
 socket.on('message_new', (message) => {
-  console.log('Message reçu:', message.content);
+  // { messageId, sender, receiver, message, status, createdAt }
+  console.log('Message reçu:', message.message);
 });
 ```
 
@@ -400,38 +396,94 @@ socket.on('message_new', (message) => {
 Confirmation d'envoi d'un message
 ```javascript
 socket.on('message_sent', (message) => {
-  console.log('Message envoyé avec ID:', message._id);
+  // { messageId, sender, receiver, message, status, createdAt }
+  console.log('Message envoyé avec ID:', message.messageId);
 });
 ```
 
-#### `message_read_receipt`
+#### `message_read`
 Confirmation de lecture d'un message
 ```javascript
-socket.on('message_read_receipt', () => {
-  console.log('Message marqué comme lu');
+socket.on('message_read', (message) => {
+  console.log('Message lu:', message.messageId);
 });
 ```
 
-#### `typing_indicator`
-Indicateur de saisie
+#### `typing_start`
+Indicateur de début de saisie
 ```javascript
-socket.on('typing_indicator', (data) => {
-  if (data.isTyping) {
-    console.log('L\'utilisateur tape un message...');
-  } else {
-    console.log('L\'utilisateur a arrêté de taper');
-  }
+socket.on('typing_start', (data) => {
+  // { fromUserId }
+  console.log('Typing start:', data.fromUserId);
 });
 ```
 
-#### `chat_history_received`
-Historique des messages reçu
+#### `typing_stop`
+Indicateur de fin de saisie
 ```javascript
-socket.on('chat_history_received', (messages) => {
-  console.log('Messages reçus:', messages);
-  messages.forEach(msg => console.log(msg.content));
+socket.on('typing_stop', (data) => {
+  // { fromUserId }
+  console.log('Typing stop:', data.fromUserId);
 });
 ```
+
+#### `app_notification`
+Notification applicative (chat, amis)
+```javascript
+socket.on('app_notification', (payload) => {
+  // payload.type: chat_message | friend_request | friend_request_response
+  console.log(payload);
+});
+```
+
+#### `item_created`
+Notification globale quand un item boutique est créé
+```javascript
+socket.on('item_created', (payload) => {
+  // { message, item }
+  console.log(payload.item?.title);
+});
+```
+
+### Payloads de référence
+
+#### `typing_start` / `typing_stop` (serveur → client)
+```json
+{
+  "fromUserId": "507f1f77bcf86cd799439011"
+}
+```
+
+#### `app_notification` type `chat_message`
+```json
+{
+  "type": "chat_message",
+  "messageId": "b3d5f8a0-...",
+  "fromUserId": "507f1f77bcf86cd799439011",
+  "preview": "Salut",
+  "createdAt": "2026-03-23T12:34:56.000Z"
+}
+```
+
+#### `user_presence`
+```json
+{
+  "userId": "507f1f77bcf86cd799439011",
+  "status": "online",
+  "lastSeen": "2026-03-23T12:34:56.000Z"
+}
+```
+
+### Note anti-doublon
+
+Le backend fait rejoindre 2 rooms par utilisateur (`userId` et `user:userId`) pour compatibilité historique.
+L'émission est volontairement faite une seule fois vers l'union des rooms:
+
+```javascript
+io.to(id).to(`user:${id}`).emit(eventName, payload);
+```
+
+Cela évite les notifications locales en double côté client.
 
 ## 🧪 Tests
 
