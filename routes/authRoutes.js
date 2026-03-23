@@ -11,6 +11,8 @@ import {
   updateProfilePrivacy,
   registerFcmToken,
   unregisterFcmToken,
+  forgotPassword,
+  resetPassword,
 } from "../controllers/authController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 import passport from "../config/passport.js";
@@ -29,13 +31,14 @@ router.post(
   uploadImageMiddleware.single("image"),
   uploadProfileImage,
 );
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 router.patch("/privacy", authMiddleware, updateProfilePrivacy);
 router.post("/fcm-token", authMiddleware, registerFcmToken);
-router.delete("/fcm-token", authMiddleware, unregisterFcmToken);
 
 //DELETE
 router.delete("/deleteAccount", authMiddleware, deleteAccount);
-
+router.delete("/fcm-token", authMiddleware, unregisterFcmToken);
 //GET
 router.get("/me", authMiddleware, getMe);
 router.get("/google", (req, res, next) => {
@@ -50,30 +53,26 @@ router.get("/google", (req, res, next) => {
     state,
   })(req, res, next);
 });
-router.get(
-  "/google/callback",
-  (req, res, next) => {
-    passport.authenticate("google", { session: false }, (error, user) => {
-      const state =
-        typeof req.query.state === "string" ? req.query.state : "";
-      const isMobileCallback = state.startsWith("ivox://");
+router.get("/google/callback", (req, res, next) => {
+  passport.authenticate("google", { session: false }, (error, user) => {
+    const state = typeof req.query.state === "string" ? req.query.state : "";
+    const isMobileCallback = state.startsWith("ivox://");
 
-      if (error || !user) {
-        if (isMobileCallback) {
-          const separator = state.includes("?") ? "&" : "?";
-          return res.redirect(
-            `${state}${separator}error=${encodeURIComponent("google_auth_failed")}`,
-          );
-        }
-
-        return res.status(401).json({ message: "Google authentication failed" });
+    if (error || !user) {
+      if (isMobileCallback) {
+        const separator = state.includes("?") ? "&" : "?";
+        return res.redirect(
+          `${state}${separator}error=${encodeURIComponent("google_auth_failed")}`,
+        );
       }
 
-      req.user = user;
-      return googleAuthCallback(req, res, next);
-    })(req, res, next);
-  },
-);
+      return res.status(401).json({ message: "Google authentication failed" });
+    }
+
+    req.user = user;
+    return googleAuthCallback(req, res, next);
+  })(req, res, next);
+});
 router.get("/google/failure", (_req, res) => {
   return res.status(401).json({ message: "Google authentication failed" });
 });

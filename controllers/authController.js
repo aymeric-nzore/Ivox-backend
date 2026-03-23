@@ -2,6 +2,8 @@ import User from "../models/user.js";
 import { generateToken } from "../utils/generateToken.js";
 import { OAuth2Client } from "google-auth-library";
 import cloudinary from "../config/cloudinary.js";
+import { generateOtpCode } from "../utils/generateOTPcode.js";
+import { sendOTPEmail } from "../services/emailService.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -163,8 +165,11 @@ export const loginGoogleMobile = async (req, res) => {
     });
 
     if (!user) {
-      const baseUsername =
-        (payload?.name || email.split("@")[0] || "user").toLowerCase();
+      const baseUsername = (
+        payload?.name ||
+        email.split("@")[0] ||
+        "user"
+      ).toLowerCase();
       let username = baseUsername;
       let suffix = 1;
 
@@ -240,7 +245,9 @@ export const updateProfilePrivacy = async (req, res) => {
     }
 
     if (typeof isPublicProfile !== "boolean") {
-      return res.status(400).json({ message: "isPublicProfile doit etre un booleen" });
+      return res
+        .status(400)
+        .json({ message: "isPublicProfile doit etre un booleen" });
     }
 
     const updatedUser = await User.findByIdAndUpdate(
@@ -391,5 +398,64 @@ export const deleteAccount = async (req, res) => {
   } catch (e) {
     console.log(e);
     return res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+export const forgotPassword = async (req, res) => {
+  try {
+    const email = (req.body?.email || "").toString().trim().toLowerCase();
+    if (!email) {
+      return res.status(400).json({ message: "Email requis" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur introuvable" });
+    }
+
+    const code = generateOtpCode();
+    user.resetCode = code;
+    user.resettCodeExpires = Date.now() + 1000 * 60;
+    await user.save();
+    await sendOTPEmail(email, code);
+    return res.status(200).json({ message: "OTP envoye" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+export const resetPassword = async (req, res) => {
+  try {
+    const email = (req.body?.email || "").toString().trim().toLowerCase();
+    const code = (req.body?.code || "").toString().trim();
+    const newPassword = (req.body?.newPassword || "").toString().trim();
+
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({ message: "Email, code et nouveau mot de passe requis" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "Mot de passe trop faible" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur introuvable" });
+    }
+
+    if (!user.resettCodeExpires || user.resettCodeExpires < Date.now()) {
+      return res.status(400).json({ message: "Code OTP expire" });
+    }
+
+    if (user.resetCode !== code) {
+      return res.status(400).json({ message: "Code invalide" });
+    }
+
+    user.password = newPassword;
+    user.resetCode = undefined;
+    user.resettCodeExpires = undefined;
+
+    await user.save();
+    return res.status(200).json({ message: "Mot de passe reinitialise" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
