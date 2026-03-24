@@ -130,32 +130,64 @@ export const googleAuthCallback = async (req, res) => {
 
 export const loginGoogleMobile = async (req, res) => {
   try {
-    const { idToken } = req.body;
-    if (!idToken) {
-      return res.status(400).json({ message: "idToken requis" });
+    const { idToken, accessToken } = req.body || {};
+    if (!idToken && !accessToken) {
+      return res
+        .status(400)
+        .json({ message: "idToken ou accessToken requis" });
     }
 
-    const audiences = [
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_ANDROID_CLIENT_ID,
-      process.env.GOOGLE_WEB_CLIENT_ID,
-    ].filter(Boolean);
+    let email = null;
+    let googleId = null;
+    let displayName = null;
 
-    if (audiences.length === 0) {
-      return res.status(500).json({
-        message: "Configuration Google manquante",
-        detail: "Set GOOGLE_CLIENT_ID or GOOGLE_ANDROID_CLIENT_ID",
+    if (idToken) {
+      const audiences = [
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_ANDROID_CLIENT_ID,
+        process.env.GOOGLE_WEB_CLIENT_ID,
+      ].filter(Boolean);
+
+      if (audiences.length === 0) {
+        return res.status(500).json({
+          message: "Configuration Google manquante",
+          detail:
+            "Set GOOGLE_CLIENT_ID or GOOGLE_ANDROID_CLIENT_ID or GOOGLE_WEB_CLIENT_ID",
+        });
+      }
+
+      const ticket = await googleClient.verifyIdToken({
+        idToken,
+        audience: audiences.length === 1 ? audiences[0] : audiences,
       });
+
+      const payload = ticket.getPayload();
+      email = payload?.email?.toLowerCase() || null;
+      googleId = payload?.sub || null;
+      displayName = payload?.name || null;
+    } else if (accessToken) {
+      const googleResponse = await fetch(
+        "https://www.googleapis.com/oauth2/v3/userinfo",
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        },
+      );
+
+      if (!googleResponse.ok) {
+        const detail = await googleResponse.text();
+        return res.status(401).json({
+          message: "Connexion Google echouee",
+          detail,
+        });
+      }
+
+      const payload = await googleResponse.json();
+      email = payload?.email?.toLowerCase() || null;
+      googleId = payload?.sub || null;
+      displayName = payload?.name || null;
     }
-
-    const ticket = await googleClient.verifyIdToken({
-      idToken,
-      audience: audiences.length === 1 ? audiences[0] : audiences,
-    });
-
-    const payload = ticket.getPayload();
-    const email = payload?.email?.toLowerCase();
-    const googleId = payload?.sub;
 
     if (!email || !googleId) {
       return res.status(401).json({ message: "Compte Google invalide" });
@@ -167,7 +199,7 @@ export const loginGoogleMobile = async (req, res) => {
 
     if (!user) {
       const baseUsername = (
-        payload?.name ||
+        displayName ||
         email.split("@")[0] ||
         "user"
       ).toLowerCase();
@@ -269,6 +301,57 @@ export const updateProfilePrivacy = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       message: "Erreur mise a jour visibilite profil",
+      detail: error?.message,
+    });
+  }
+};
+
+export const updateUsername = async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    const rawUsername = (req.body?.username || "").toString();
+    const username = rawUsername.trim().toLowerCase();
+
+    if (!userId) {
+      return res.status(401).json({ message: "Non authentifie" });
+    }
+
+    if (!username) {
+      return res.status(400).json({ message: "Nom d'utilisateur requis" });
+    }
+
+    if (username.length < 3) {
+      return res
+        .status(400)
+        .json({ message: "Le nom d'utilisateur doit contenir au moins 3 caracteres" });
+    }
+
+    const conflict = await User.findOne({
+      username,
+      _id: { $ne: userId },
+    });
+
+    if (conflict) {
+      return res.status(400).json({ message: "Nom d'utilisateur deja utilise" });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { username },
+      { new: true },
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "Utilisateur non trouve" });
+    }
+
+    return res.status(200).json({
+      message: "Nom d'utilisateur mis a jour",
+      username: updatedUser.username,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Erreur mise a jour du nom d'utilisateur",
       detail: error?.message,
     });
   }

@@ -9,6 +9,7 @@ import {
   getMe,
   uploadProfileImage,
   updateProfilePrivacy,
+  updateUsername,
   registerFcmToken,
   unregisterFcmToken,
   forgotPassword,
@@ -34,6 +35,7 @@ router.post(
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 router.patch("/privacy", authMiddleware, updateProfilePrivacy);
+router.patch("/username", authMiddleware, updateUsername);
 router.post("/fcm-token", authMiddleware, registerFcmToken);
 
 //DELETE
