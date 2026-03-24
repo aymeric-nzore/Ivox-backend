@@ -43,9 +43,13 @@ export const emitAppNotification = (io, userId, payload) => {
       type,
       fromUserId: payload?.fromUserId,
       messageId: payload?.messageId,
+      preview: payload?.preview,
+      message: payload?.message,
       createdAt: payload?.createdAt,
     },
-  }).catch(() => {});
+  }).catch((error) => {
+    console.error("Push notification error:", error?.message || error);
+  });
 };
 
 export const emitPresence = (io, payload) => {

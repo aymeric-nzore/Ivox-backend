@@ -25,11 +25,18 @@ export const sendPushToUser = async ({
   data,
 }) => {
   const messaging = getFirebaseMessaging();
-  if (!messaging || !userId) return;
+  if (!userId) return;
+  if (!messaging) {
+    console.warn("FCM unavailable: missing Firebase Admin configuration");
+    return;
+  }
 
   const user = await User.findById(userId).select("fcmTokens");
   const tokens = (user?.fcmTokens || []).filter(Boolean);
-  if (!tokens.length) return;
+  if (!tokens.length) {
+    console.info(`No FCM token registered for user ${userId}`);
+    return;
+  }
 
   const message = {
     tokens,
@@ -67,7 +74,10 @@ export const sendPushToUser = async ({
 
 export const sendPushToAllUsers = async ({ title, body, data }) => {
   const messaging = getFirebaseMessaging();
-  if (!messaging) return;
+  if (!messaging) {
+    console.warn("FCM unavailable: missing Firebase Admin configuration");
+    return;
+  }
 
   const users = await User.find({ fcmTokens: { $exists: true, $ne: [] } }).select(
     "fcmTokens",
