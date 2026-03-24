@@ -260,3 +260,110 @@ export const buyShopItem = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
+// Équiper une animation comme splash screen
+export const equipAnimation = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+    const { animationId } = req.body;
+
+    if (!animationId) {
+      return res.status(400).json({ message: "animationId requis" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    // Vérifier que l'utilisateur possède l'animation
+    const ownsAnimation = user.ownedItems.some(
+      (item) => item.itemId.toString() === animationId && item.type === "animation"
+    );
+
+    if (!ownsAnimation) {
+      return res
+        .status(403)
+        .json({ message: "Vous ne possédez pas cette animation" });
+    }
+
+    // Équiper l'animation
+    user.activeSplashAnimation = animationId;
+    await user.save();
+
+    return res.status(200).json({
+      message: "Animation équipée avec succès",
+      activeSplashAnimation: animationId,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// Récupérer l'animation équipée
+export const getActiveSplashAnimation = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+
+    const user = await User.findById(userId).populate("activeSplashAnimation");
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    const animation = user.activeSplashAnimation;
+
+    if (!animation) {
+      return res.status(200).json({
+        message: "Aucune animation équipée",
+        animation: null,
+      });
+    }
+
+    return res.status(200).json({
+      id: animation._id,
+      title: animation.title,
+      assetUrl: animation.assetUrl,
+      duration: animation.duration,
+      format: animation.format,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// Récupérer les animations possédées par l'utilisateur
+export const getUserOwnedAnimations = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    // Récupérer les IDs des animations possédées
+    const animationIds = user.ownedItems
+      .filter((item) => item.type === "animation")
+      .map((item) => item.itemId);
+
+    // Charger les animations
+    const animations = await Animation.find({ _id: { $in: animationIds } });
+
+    const result = animations.map((anim) => ({
+      id: anim._id,
+      title: anim.title,
+      assetUrl: anim.assetUrl,
+      duration: anim.duration,
+      format: anim.format,
+      price: anim.price,
+      isActive: String(user.activeSplashAnimation) === String(anim._id),
+    }));
+
+    return res.status(200).json({
+      total: result.length,
+      animations: result,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};

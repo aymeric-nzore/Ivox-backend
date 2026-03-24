@@ -103,6 +103,17 @@ const userSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    ownedAnimations: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Animation",
+      },
+    ],
+    activeSplashAnimation: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Animation",
+      default: null,
+    },
     resetCode: String,
     resettCodeExpires: Date,
   },

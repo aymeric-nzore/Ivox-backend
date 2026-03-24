@@ -7,6 +7,9 @@ import {
   getAllItems,
   getOneItem,
   deleteShopItem,
+  equipAnimation,
+  getActiveSplashAnimation,
+  getUserOwnedAnimations,
 } from "../controllers/ItemController.js";
 import { uploadItemMiddleware } from "../middlewares/itemMiddleware.js";
 
@@ -29,9 +32,12 @@ router.post(
   uploadShopItem,
 );
 router.post("/:id/buy", authMiddleware, buyShopItem);
+router.post("/animation/equip", authMiddleware, equipAnimation);
 //GET
 router.get("/", getAllItems);
 router.get("/:id", getOneItem);
+router.get("/animation/active", authMiddleware, getActiveSplashAnimation);
+router.get("/animation/owned", authMiddleware, getUserOwnedAnimations);
 //DELETE
 router.delete("/:id", adminMiddleware, deleteShopItem);
 export default router;
