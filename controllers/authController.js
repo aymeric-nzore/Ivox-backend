@@ -138,6 +138,7 @@ export const loginGoogleMobile = async (req, res) => {
     const audiences = [
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_ANDROID_CLIENT_ID,
+      process.env.GOOGLE_WEB_CLIENT_ID,
     ].filter(Boolean);
 
     if (audiences.length === 0) {
@@ -204,6 +205,7 @@ export const loginGoogleMobile = async (req, res) => {
       expectedAudience: [
         process.env.GOOGLE_CLIENT_ID,
         process.env.GOOGLE_ANDROID_CLIENT_ID,
+        process.env.GOOGLE_WEB_CLIENT_ID,
       ].filter(Boolean),
     });
   }
