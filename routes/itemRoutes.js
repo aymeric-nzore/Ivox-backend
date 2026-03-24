@@ -8,6 +8,7 @@ import {
   getOneItem,
   deleteShopItem,
   equipAnimation,
+  unequipAnimation,
   getActiveSplashAnimation,
   getUserOwnedAnimations,
 } from "../controllers/ItemController.js";
@@ -33,6 +34,7 @@ router.post(
 );
 router.post("/:id/buy", authMiddleware, buyShopItem);
 router.post("/animation/equip", authMiddleware, equipAnimation);
+router.post("/animation/unequip", authMiddleware, unequipAnimation);
 //GET
 router.get("/", getAllItems);
 router.get("/:id", getOneItem);
