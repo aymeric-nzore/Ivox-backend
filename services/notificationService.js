@@ -1,4 +1,5 @@
 import { sendPushToUser } from "./pushNotificationService.js";
+import User from "../models/user.js";
 
 export const toUserRoom = (userId) => `user:${userId}`;
 
@@ -35,13 +36,19 @@ export const emitAppNotification = (io, userId, payload) => {
     payload?.fromUsername ||
     "Nouvelle notification";
 
+  const pushTitle =
+    type === "chat_message" && payload?.fromUsername
+      ? `Nouveau message de ${payload.fromUsername}`
+      : titleByType[type] || "IVOX";
+
   sendPushToUser({
     userId,
-    title: titleByType[type] || "IVOX",
+    title: pushTitle,
     body,
     data: {
       type,
       fromUserId: payload?.fromUserId,
+      fromUsername: payload?.fromUsername,
       messageId: payload?.messageId,
       preview: payload?.preview,
       message: payload?.message,
@@ -69,13 +76,28 @@ export const emitMessageEvents = (io, message) => {
   emitToUser(io, payload.receiver, "message_new", payload);
   emitToUser(io, payload.sender, "message_sent", payload);
 
-  emitAppNotification(io, payload.receiver, {
-    type: "chat_message",
-    messageId: payload.messageId,
-    fromUserId: payload.sender,
-    preview: payload.message,
-    createdAt: payload.createdAt,
-  });
+  User.findById(payload.sender)
+    .select("username")
+    .then((senderUser) => {
+      const fromUsername = (senderUser?.username || "Utilisateur").toString();
+      emitAppNotification(io, payload.receiver, {
+        type: "chat_message",
+        messageId: payload.messageId,
+        fromUserId: payload.sender,
+        fromUsername,
+        preview: payload.message,
+        createdAt: payload.createdAt,
+      });
+    })
+    .catch(() => {
+      emitAppNotification(io, payload.receiver, {
+        type: "chat_message",
+        messageId: payload.messageId,
+        fromUserId: payload.sender,
+        preview: payload.message,
+        createdAt: payload.createdAt,
+      });
+    });
 };
 
 export const emitReadEvents = (io, message, actorUserId) => {
