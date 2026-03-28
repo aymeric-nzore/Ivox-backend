@@ -15,6 +15,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Health checks for uptime monitors
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", service: "backend" });
+});
+
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok", service: "backend" });
+});
+
 //ROUTES
 app.use("/api/auth", authRoutes);
 app.use("/api/video", uploadVideoRoutes);
