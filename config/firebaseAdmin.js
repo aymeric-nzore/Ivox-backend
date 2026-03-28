@@ -1,6 +1,7 @@
 import admin from "firebase-admin";
 
 let initialized = false;
+let warnedMissingConfig = false;
 
 const getPrivateKey = () => {
   const key = process.env.FIREBASE_PRIVATE_KEY;
@@ -19,6 +20,17 @@ export const initFirebaseAdmin = () => {
   const privateKey = getPrivateKey();
 
   if (!projectId || !clientEmail || !privateKey) {
+    if (!warnedMissingConfig) {
+      const missing = [
+        !projectId ? "FIREBASE_PROJECT_ID" : null,
+        !clientEmail ? "FIREBASE_CLIENT_EMAIL" : null,
+        !privateKey ? "FIREBASE_PRIVATE_KEY" : null,
+      ].filter(Boolean);
+      console.warn(
+        `Firebase Admin non configure. Variables manquantes: ${missing.join(", ")}. Les notifications push hors-app ne fonctionneront pas.`,
+      );
+      warnedMissingConfig = true;
+    }
     return false;
   }
 
@@ -31,6 +43,7 @@ export const initFirebaseAdmin = () => {
   });
 
   initialized = true;
+  console.log("Firebase Admin initialise avec succes.");
   return true;
 };
 

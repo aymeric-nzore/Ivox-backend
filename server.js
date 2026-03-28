@@ -10,6 +10,7 @@ import itemRoutes from "./routes/itemRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
 import registerSocketHandlers from "./sockets/registerSocketHandlers.js";
+import { initFirebaseAdmin } from "./config/firebaseAdmin.js";
 connectDB();
 const app = express();
 app.use(cors());
@@ -43,5 +44,11 @@ registerSocketHandlers(io);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, function () {
-  console.log("Server started on");
+  const firebaseReady = initFirebaseAdmin();
+  console.log(`Server started on port ${PORT}`);
+  if (!firebaseReady) {
+    console.log(
+      "Push notifications hors-app desactivees: Firebase Admin non configure.",
+    );
+  }
 });
