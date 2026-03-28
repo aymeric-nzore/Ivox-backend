@@ -81,18 +81,22 @@ export const uploadShopItem = async (req, res) => {
       item,
     });
 
-    if (type === "song") {
-      sendPushToAllUsers({
-        title: "Nouvelle musique disponible",
-        body: item.title,
-        data: {
-          type: "shop_item_created",
-          itemType: "song",
-          itemId: item._id,
-          title: item.title,
-        },
-      }).catch(() => {});
-    }
+    const pushTitleByType = {
+      song: "Nouvelle musique disponible",
+      animation: "Nouvelle animation disponible",
+      avatar: "Nouvel avatar disponible",
+    };
+
+    sendPushToAllUsers({
+      title: pushTitleByType[type] || "Nouveau contenu disponible",
+      body: item.title,
+      data: {
+        type: "shop_item_created",
+        itemType: type,
+        itemId: item._id,
+        title: item.title,
+      },
+    }).catch(() => {});
 
     return res.status(201).json(item);
   } catch (error) {
