@@ -335,3 +335,11 @@ export const unblockUser = async (req, res) => {
   }
 };
 
+//logique concernant les jeux
+export const xpRequiredToLevelUp = (level) =>{
+  return 100 + level * 25;
+}
+
+export const addXp = async (req , res)=>{
+  const user = await User.findById(req.params.id)
+}

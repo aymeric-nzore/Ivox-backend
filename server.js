@@ -8,6 +8,7 @@ import authRoutes from "./routes/authRoutes.js";
 import uploadVideoRoutes from "./routes/videoRoutes.js";
 import itemRoutes from "./routes/itemRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import levelRoutes from "./routes/levelRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
 import registerSocketHandlers from "./sockets/registerSocketHandlers.js";
 import { initFirebaseAdmin } from "./config/firebaseAdmin.js";
@@ -30,6 +31,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/video", uploadVideoRoutes);
 app.use("/api/shopItem", itemRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/levels", levelRoutes);
 app.use("/api/messages", messageRoutes);
 //IO
 const server = createServer(app);
