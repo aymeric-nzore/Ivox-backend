@@ -6,6 +6,7 @@ import {
 import { getRoomId } from "../utils/chatHelper.js";
 import User from "../models/user.js";
 import {
+  emitToUser,
   emitMessageEvents,
   emitPresence,
   emitReadEvents,
@@ -149,6 +150,94 @@ const registerSocketHandlers = (io) => {
       }
 
       emitTypingEvents(io, toUserId, socket.userId, false);
+    });
+
+    socket.on("call_invite", ({ toUserId, callId, callerName } = {}) => {
+      if (!socket.userId || !toUserId || !callId) {
+        socket.emit("call_error", {
+          message: "toUserId et callId sont requis",
+        });
+        return;
+      }
+
+      emitToUser(io, toUserId, "call_invite", {
+        callId: callId.toString(),
+        fromUserId: socket.userId,
+        callerName: (callerName || "Utilisateur").toString(),
+        createdAt: new Date().toISOString(),
+      });
+    });
+
+    socket.on("call_accept", ({ toUserId, callId } = {}) => {
+      if (!socket.userId || !toUserId || !callId) {
+        return;
+      }
+
+      emitToUser(io, toUserId, "call_accept", {
+        callId: callId.toString(),
+        fromUserId: socket.userId,
+        createdAt: new Date().toISOString(),
+      });
+    });
+
+    socket.on("call_reject", ({ toUserId, callId } = {}) => {
+      if (!socket.userId || !toUserId || !callId) {
+        return;
+      }
+
+      emitToUser(io, toUserId, "call_reject", {
+        callId: callId.toString(),
+        fromUserId: socket.userId,
+        createdAt: new Date().toISOString(),
+      });
+    });
+
+    socket.on("call_end", ({ toUserId, callId } = {}) => {
+      if (!socket.userId || !toUserId || !callId) {
+        return;
+      }
+
+      emitToUser(io, toUserId, "call_end", {
+        callId: callId.toString(),
+        fromUserId: socket.userId,
+        createdAt: new Date().toISOString(),
+      });
+    });
+
+    socket.on("webrtc_offer", ({ toUserId, callId, sdp } = {}) => {
+      if (!socket.userId || !toUserId || !callId || !sdp) {
+        return;
+      }
+
+      emitToUser(io, toUserId, "webrtc_offer", {
+        callId: callId.toString(),
+        fromUserId: socket.userId,
+        sdp,
+      });
+    });
+
+    socket.on("webrtc_answer", ({ toUserId, callId, sdp } = {}) => {
+      if (!socket.userId || !toUserId || !callId || !sdp) {
+        return;
+      }
+
+      emitToUser(io, toUserId, "webrtc_answer", {
+        callId: callId.toString(),
+        fromUserId: socket.userId,
+        sdp,
+      });
+    });
+
+    socket.on("webrtc_ice", ({ toUserId, callId, candidate } = {}) => {
+      if (!socket.userId || !toUserId || !callId || !candidate) {
+        return;
+      }
+
+      emitToUser(io, toUserId, "webrtc_ice", {
+        callId: callId.toString(),
+        fromUserId: socket.userId,
+        candidate,
+      });
     });
 
     socket.on("disconnect", () => {

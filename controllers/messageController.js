@@ -90,6 +90,41 @@ export const getChatUsersHandler = async (req, res) => {
   }
 };
 
+export const getUnreadCountsHandler = async (req, res) => {
+  try {
+    const receiverId = req.user?._id;
+    if (!receiverId) {
+      return res.status(401).json({ message: "Non authentifie" });
+    }
+
+    const aggregate = await Message.aggregate([
+      {
+        $match: {
+          receiver: receiverId,
+          status: { $ne: "read" },
+        },
+      },
+      {
+        $group: {
+          _id: "$sender",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const counts = Object.fromEntries(
+      aggregate.map((entry) => [
+        entry._id?.toString?.() ?? String(entry._id),
+        Number(entry.count) || 0,
+      ]),
+    );
+
+    return res.status(200).json({ counts });
+  } catch (_error) {
+    return res.status(500).json({ message: "Erreur chargement non lus" });
+  }
+};
+
 export const getMessagesWithUserHandler = async (req, res) => {
   const withUserId = req.params.withUserId;
   if (!withUserId) {
